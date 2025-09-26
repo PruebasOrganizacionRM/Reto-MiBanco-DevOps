@@ -1,0 +1,16 @@
+name: Pruebas usando variables
+run-name: ¡Estoy probando variables a usar Variables!
+on:
+  workflow_dispatch
+env:
+  ORG: ${{ github.repository_owner }}
+jobs:
+  saludo-variables:
+    runs-on: ubuntu-latest
+    env:
+      SALUDO: Hola
+    steps:
+      - name: Saludar
+        run: echo "$SALUDO, $NOMBRE. Hoy es $ORG!"
+        env:
+          NOMBRE: Rafael
