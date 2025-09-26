@@ -1,0 +1,90 @@
+name: Onboarding Usuarios
+run-name: Onboarding de Usuarios
+on:
+  workflow_dispatch:
+    inputs:
+      username:
+        description: "GitHub username a invitar (sin @)"
+        required: true
+        type: string
+      team:
+        description: "Nombre del team en la organización"
+        required: true
+        type: string
+      repo:
+        description: "Repositorio destino para asignar permisos (nombre)"
+        required: true
+        type: string
+      permission:
+        description: "Permiso en repo: pull, triage, push, maintain, admin"
+        required: true
+        default: "push"
+        type: string
+
+jobs:
+  onboarding:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+      issues: write
+    steps:
+      - name: Instalar GitHub CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl jq
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | \
+            sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          sudo apt-get update
+          sudo apt-get install -y gh
+
+      - name: Auth gh con token
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          echo "$GH_TOKEN" | gh auth login --with-token
+
+      - name: Obtener ID de usuario (si existe)
+        id: userid
+        run: |
+          set -e
+          USER="${{ inputs.username }}"
+          # Si no existe, 'gh api users/...' fallará. Manejamos la salida.
+          if gh api users/$USER --jq '.id' >/dev/null 2>&1; then
+            echo "id=$(gh api users/$USER --jq '.id')" >> "$GITHUB_OUTPUT"
+          else
+            echo "id=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Invitar usuario a la organización (si no es miembro)
+        env:
+          ORG: ${{ github.repository_owner }}
+        run: |
+          USER="${{ inputs.username }}"
+          # Invitar por nombre de usuario (si no pertenece ya)
+          MEMBERSHIP=$(gh api /orgs/$ORG/members/$USER -q . >/dev/null 2>&1 || echo "not_member")
+          if [ "$MEMBERSHIP" = "not_member" ]; then
+            echo "Invitando $USER a $ORG"
+            gh api --method POST /orgs/$ORG/invitations -f invitee_id=$(gh api users/$USER --jq '.id') -f role=direct_member || true
+          else
+            echo "$USER ya es miembro o no se pudo comprobar membership; continuamos"
+          fi
+
+      - name: Agregar usuario al equipo
+        env:
+          ORG: ${{ github.repository_owner }}
+        run: |
+          gh api --method PUT /orgs/$ORG/teams/${{ inputs.team }}/memberships/${{ inputs.username }} || true
+
+      - name: Asignar permisos en repositorio
+        env:
+          ORG: ${{ github.repository_owner }}
+        run: |
+          gh api --method PUT /orgs/$ORG/teams/${{ inputs.team }}/repos/$ORG/${{ inputs.repo }} -f permission=${{ inputs.permission }} || true
+
+      - name: Crear issue de bienvenida
+        env:
+          ORG: ${{ github.repository_owner }}
+        run: |
+          gh issue create --repo $ORG/${{ inputs.repo }} --title "🎉 Bienvenido @${{ inputs.username }}!" \
+            --body "Hola @${{ inputs.username }}\n\nBienvenido a **${{ inputs.team }}**. Aquí tienes:\n- Repo: ${{ inputs.repo }}\n- Permiso: ${{ inputs.permission }}\n\nSi necesitas acceso adicional, abre un ticket." || true
