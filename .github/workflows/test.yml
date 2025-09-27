@@ -23,7 +23,7 @@ jobs:
     steps:
       - name: Invitar usuario y asignar a team
         env:
-          ORG: rafamelendez   # 👈 asegúrate de poner aquí el slug exacto de tu organización
+          ORG: PruebasOrganizacionRM   # 👈 asegúrate de poner aquí el slug exacto de tu organización
           USER: ${{ inputs.username }}
           TEAM: ${{ inputs.team }}
           ROLE: ${{ inputs.role }}
