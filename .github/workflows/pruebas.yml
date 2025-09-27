@@ -74,18 +74,34 @@ jobs:
        env:
           ORG: ${{ inputs.team }}
        run: |
+          TEAM_SLUG=$(gh api /orgs/$ORG/teams --jq ".[] | select(.name==\"${{ inputs.team }}\") | .slug")
+          if [ -z "$TEAM_SLUG" ]; then
+          echo "❌ No se encontró el equipo con nombre: $TEAM_NAME"
+          exit 1
+          fi
+          echo "📌 Slug del equipo encontrado: $TEAM_SLUG"
           gh api --method PUT /orgs/$ORG/teams/${{ inputs.team }}/memberships/${{ inputs.username }} || true
-     
-     - name: Asignar permisos en repositorio
-       env:
-          ORG: ${{ inputs.team }}
-       run: |
-          gh api --method PUT /orgs/$ORG/teams/${{ inputs.team }}/repos/$ORG/${{ inputs.repo }} -f permission=${{ inputs.permission }} || true
+          # 3. Esperar hasta que el usuario acepte la invitación
+          echo "⏳ Verificando si $USER ya aceptó la invitación..."
+          for i in {1..10}; do
+            STATUS=$(gh api /orgs/$ORG/members/$USER -q . >/dev/null 2>&1 && echo "accepted" || echo "pending")
+            if [ "$STATUS" = "accepted" ]; then
+              echo "✅ $USER ya es miembro confirmado"
+            break
+            fi
+            echo "⌛ Invitación aún pendiente, esperando 30s..."
+            sleep 30
+          done
 
-     - name: Crear issue de bienvenida
-       env:
-          ORG: ${{ inputs.team }}
-       run: |
-          gh issue create --repo $ORG/${{ inputs.repo }} --title "🎉 Bienvenido @${{ inputs.username }}!" \
-            --body "Hola @${{ inputs.username }}\n\n Bienvenido a **${{ inputs.team }}**. Aquí tienes:\n - Repo: ${{ inputs.repo }}\n- Permiso: ${{ inputs.permission }}\n\n Si necesitas acceso adicional, abre un ticket." || true
+          if [ "$STATUS" != "accepted" ]; then
+            echo "⚠️ El usuario $USER aún no aceptó la invitación. No se puede agregar al equipo."
+            exit 0
+          fi
+
+          # 4. Agregar al equipo
+          echo "👥 Agregando $USER al equipo $TEAM_NAME ($TEAM_SLUG)"
+          gh api --method PUT /orgs/$ORG/teams/$TEAM_SLUG/memberships/$USER -f role=member
+          echo "🎉 $USER agregado correctamente al equipo"
+     
+     
       
