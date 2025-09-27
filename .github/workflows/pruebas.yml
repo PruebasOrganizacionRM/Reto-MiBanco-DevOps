@@ -76,7 +76,8 @@ jobs:
        run: |
           TEAM_SLUG=$(gh api /orgs/$ORG/teams --jq ".[] | select(.name==\"${{ inputs.team }}\") | .slug")
           if [ -z "$TEAM_SLUG" ]; then
-          echo "❌ No se encontró el equipo con nombre: $TEAM_NAME"
+          echo "tam slug -> $TEAM_SLUG "
+          echo "❌ No se encontró el equipo con nombre: ${{ inputs.team }}"
           exit 1
           fi
           echo "📌 Slug del equipo encontrado: $TEAM_SLUG"
