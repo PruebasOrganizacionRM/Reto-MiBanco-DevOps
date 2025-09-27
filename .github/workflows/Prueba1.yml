@@ -1,0 +1,54 @@
+name: Pruebas Offboarding Usuarios
+run-name: Pruebas de baja de usuarios!
+on:
+  workflow_dispatch:
+    inputs:
+      username:
+        description: "GitHub username a remover (sin @)"
+        required: true
+        type: string
+      repo:
+        description: "Repositorio para registrar auditoría"
+        required: true
+        type: string
+      remove_from_org:
+        description: "Eliminar de la org? (yes/no)"
+        required: false
+        default: "no"
+        type: string
+
+jobs:
+  remove-user-from-teams:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remover usuario de todos los teams
+        env:
+          ORG: ${{ github.repository_owner }}   # 👈 tu organización
+          USER: ${{ inputs.username }}    # 👈 el usuario que quieres remover
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          set -e
+
+          echo "🔎 Verificando si $USER es miembro de la organización $ORG..."
+          if ! gh api orgs/$ORG/members/$USER >/dev/null 2>&1; then
+            echo "⚠️ El usuario $USER no es miembro de la organización $ORG"
+            exit 0
+          fi
+
+          echo "📋 Listando equipos en la organización $ORG..."
+          teams=$(gh api /orgs/$ORG/teams --jq '.[].slug')
+
+          if [ -z "$teams" ]; then
+            echo "⚠️ No se encontraron equipos en la organización $ORG"
+            exit 0
+          fi
+
+          for team in $teams; do
+            echo "🔎 Verificando si $USER pertenece al team $team..."
+            if gh api /orgs/$ORG/teams/$team/memberships/$USER >/dev/null 2>&1; then
+              echo "🗑️ Removiendo $USER del team $team"
+              gh api --method DELETE /orgs/$ORG/teams/$team/memberships/$USER || true
+            else
+              echo "ℹ️ $USER no está en el team $team"
+            fi
+          done
