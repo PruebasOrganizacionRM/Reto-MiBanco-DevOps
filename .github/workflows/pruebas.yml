@@ -31,9 +31,9 @@ jobs:
     steps:
      - name: Auth gh con token
        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN1: ${{ secrets.GH_TOKEN }}
        run: |
-          echo "$GH_TOKEN" | gh auth login --with-token
+          echo "$GH_TOKEN1" | gh auth login --with-token
      - name: Obtener ID de usuario (si existe)
        id: userid
        run: |
