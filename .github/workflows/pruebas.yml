@@ -58,7 +58,7 @@ jobs:
           if [ "$MEMBERSHIP" = "not_member" ]; then
             echo "Invitando $USER a $ORG"
             
-            INVITEE_ID=$(gh api users/$USER | jq -r '.id')
+            INVITEE_ID=$((gh api users/$USER | jq -r '.id'))
             INVITEE_ID1=$(gh api users/$USER --jq '.id' | sed 's/"//g')
             INVITEE_ID2=$(gh api users/$USER --jq '.id' | tr -d '"')
 
@@ -68,30 +68,10 @@ jobs:
             echo "id 3 -> $INVITEE_ID2 **"
 
             gh api --method POST /orgs/$ORG/invitations \
-            -f invitee_id=(($INVITEE_ID)) \
+            -f invitee_id=234737768 \
             -f role=direct_member || true
 
             
           else
             echo "$USER ya es miembro o no se pudo comprobar membership; continuamos"
           fi
-     
-     - name: Agregar usuario al equipo
-       env:
-          ORG: ${{ inputs.team }}
-       run: |
-          gh api --method PUT /orgs/$ORG/teams/${{ inputs.team }}/memberships/${{ inputs.username }} || true
-     
-     - name: Asignar permisos en repositorio
-       env:
-          ORG: ${{ inputs.team }}
-       run: |
-          gh api --method PUT /orgs/$ORG/teams/${{ inputs.team }}/repos/$ORG/${{ inputs.repo }} -f permission=${{ inputs.permission }} || true
-
-     - name: Crear issue de bienvenida
-       env:
-          ORG: ${{ inputs.team }}
-       run: |
-          gh issue create --repo $ORG/${{ inputs.repo }} --title "🎉 Bienvenido @${{ inputs.username }}!" \
-            --body "Hola @${{ inputs.username }}\n\nBienvenido a **${{ inputs.team }}**. Aquí tienes:\n- Repo: ${{ inputs.repo }}\n- Permiso: ${{ inputs.permission }}\n\nSi necesitas acceso adicional, abre un ticket." || true
-      
