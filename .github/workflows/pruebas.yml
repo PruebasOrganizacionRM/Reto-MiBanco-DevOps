@@ -34,37 +34,7 @@ jobs:
           GH_TOKEN1: ${{ secrets.GH_TOKEN }}
        run: |
           echo "$GH_TOKEN1" | gh auth login --with-token
-     - name: Obtener ID de usuario (si existe)
-       id: userid
-       run: |
-          set -e
-          USER="${{ inputs.username }}"
-          # Si no existe, 'gh api users/...' fallará. Manejamos la salida.
-          if gh api users/$USER --jq '.id' >/dev/null 2>&1; then
-            echo "id=$(gh api users/$USER --jq '.id')" >> "$GITHUB_OUTPUT"
-          else
-            echo "id=" >> "$GITHUB_OUTPUT"
-          fi
-     - name: Usar el ID en otro paso
-       run: |
-          echo "El ID del usuario es: ${{ steps.userid.outputs.id }}"
-     - name: Invitar usuario a la organización (si no es miembro)
-       env:
-          ORG: ${{ inputs.team }}
-       run: |
-          USER="${{ inputs.username }}"
-          # Invitar por nombre de usuario (si no pertenece ya)
-          MEMBERSHIP=$(gh api /orgs/$ORG/members/$USER -q . >/dev/null 2>&1 || echo "not_member")
-          if [ "$MEMBERSHIP" = "not_member" ]; then
-            echo "Invitando $USER a $ORG"
-            
-            INVITEE_ID=$(gh api users/$USER | jq -r '.id')
-            gh api --method POST /orgs/$ORG/invitations \
-            --input - <<< "{\"invitee_id\": $INVITEE_ID, \"role\": \"direct_member\"}" || true
-           
-          else
-            echo "$USER ya es miembro o no se pudo comprobar membership; continuamos"
-          fi
+     
      - name: Agregar usuario al equipo
        env:
           ORG: ${{ inputs.team }}
@@ -72,28 +42,8 @@ jobs:
        run: |
           TEAM_SLUG=$(gh api /orgs/$ORG/teams --jq ".[] | select(.name==\"$ORG\") | .slug")
           echo "📌 Slug del equipo encontrado: $TEAM_SLUG"
-          gh api --method PUT /orgs/$ORG/teams/${{ inputs.team }}/memberships/${{ inputs.username }} || true
-          # 3. Esperar hasta que el usuario acepte la invitación
-          echo "⏳ Verificando si $USER ya aceptó la invitación..."
-          for i in {1..10}; do
-            STATUS=$(gh api /orgs/$ORG/members/$USER -q . >/dev/null 2>&1 && echo "accepted" || echo "pending")
-            if [ "$STATUS" = "accepted" ]; then
-              echo "✅ $USER ya es miembro confirmado"
-            break
-            fi
-            echo "⌛ Invitación aún pendiente, esperando 30s..."
-            sleep 30
-          done
-
-          if [ "$STATUS" != "accepted" ]; then
-            echo "⚠️ El usuario $USER aún no aceptó la invitación. No se puede agregar al equipo."
-            exit 0
-          fi
-
-          # 4. Agregar al equipo
-          echo "👥 Agregando $USER al equipo $TEAM_NAME ($TEAM_SLUG)"
-          gh api --method PUT /orgs/$ORG/teams/$TEAM_SLUG/memberships/$USER -f role=member
-          echo "🎉 $USER agregado correctamente al equipo"
-     
+          
+          TEAM_NAMES=$(gh api /orgs/$ORG/teams --jq '.[].name')
+          echo "$TEAM_NAMES"
      
       
