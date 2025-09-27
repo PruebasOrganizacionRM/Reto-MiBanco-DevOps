@@ -58,7 +58,7 @@ jobs:
           if [ "$MEMBERSHIP" = "not_member" ]; then
             echo "Invitando $USER a $ORG"
             
-            INVITEE_ID=$(gh api users/$USER --jq '.id')
+            INVITEE_ID=$(gh api users/$USER | jq -r '.id')
 
             gh api --method POST /orgs/$ORG/invitations \
             -f invitee_id=$INVITEE_ID \
