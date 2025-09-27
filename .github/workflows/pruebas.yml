@@ -58,7 +58,7 @@ jobs:
           if [ "$MEMBERSHIP" = "not_member" ]; then
             echo "Invitando $USER a $ORG"
             
-            INVITEE_ID= $(gh api users/$USER | jq -r '.id')
+            INVITEE_ID=$(gh api users/$USER | jq -r '.id')
             INVITEE_ID1=$(gh api users/$USER --jq '.id' | sed 's/"//g')
             INVITEE_ID2=$(gh api users/$USER --jq '.id' | tr -d '"')
 
