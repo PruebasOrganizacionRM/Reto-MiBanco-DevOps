@@ -50,7 +50,7 @@ jobs:
           echo "El ID del usuario es: ${{ steps.userid.outputs.id }}"
      - name: Invitar usuario a la organización (si no es miembro)
        env:
-          ORG: ${{ github.repository_owner }}
+          ORG: ${{ inputs.team }}
        run: |
           USER="${{ inputs.username }}"
           # Invitar por nombre de usuario (si no pertenece ya)
@@ -64,19 +64,19 @@ jobs:
      
      - name: Agregar usuario al equipo
        env:
-          ORG: ${{ github.repository_owner }}
+          ORG: ${{ inputs.team }}
        run: |
           gh api --method PUT /orgs/$ORG/teams/${{ inputs.team }}/memberships/${{ inputs.username }} || true
      
      - name: Asignar permisos en repositorio
        env:
-          ORG: ${{ github.repository_owner }}
+          ORG: ${{ inputs.team }}
        run: |
           gh api --method PUT /orgs/$ORG/teams/${{ inputs.team }}/repos/$ORG/${{ inputs.repo }} -f permission=${{ inputs.permission }} || true
 
      - name: Crear issue de bienvenida
        env:
-          ORG: ${{ github.repository_owner }}
+          ORG: ${{ inputs.team }}
        run: |
           gh issue create --repo $ORG/${{ inputs.repo }} --title "🎉 Bienvenido @${{ inputs.username }}!" \
             --body "Hola @${{ inputs.username }}\n\nBienvenido a **${{ inputs.team }}**. Aquí tienes:\n- Repo: ${{ inputs.repo }}\n- Permiso: ${{ inputs.permission }}\n\nSi necesitas acceso adicional, abre un ticket." || true
