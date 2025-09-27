@@ -40,10 +40,31 @@ jobs:
           ORG: ${{ inputs.team }}
           USER: ${{ inputs.username }}
        run: |
-          TEAM_SLUG=$(gh api /orgs/$ORG/teams --jq ".[] | select(.name==\"$ORG\") | .slug")
-          echo "📌 Slug del equipo encontrado: $TEAM_SLUG"
           
-          TEAM_NAMES=$(gh api /orgs/$ORG/teams)
-          echo "prueba de teams -> $TEAM_NAMES"
-     
+
+          echo "🔎 Obteniendo todos los equipos de la organización: $ORG..."
+
+          # Obtener nombres y slugs en arrays
+          mapfile -t TEAM_NAMES < <(gh api /orgs/$ORG/teams --jq '.[].name')
+          mapfile -t TEAM_SLUGS < <(gh api /orgs/$ORG/teams --jq '.[].slug')
+          
+          echo "✅ Equipos encontrados:"
+          for i in "${!TEAM_NAMES[@]}"; do
+            echo " - ${TEAM_NAMES[$i]} (slug: ${TEAM_SLUGS[$i]})"
+          done
+          
+          echo ""
+          echo "👤 Preparando para agregar al usuario $USER en cada equipo..."
+          
+          # Recorremos todos los equipos y agregamos al usuario
+          for i in "${!TEAM_SLUGS[@]}"; do
+            TEAM_NAME=${TEAM_NAMES[$i]}
+            TEAM_SLUG=${TEAM_SLUGS[$i]}
+          
+            echo "➡️  Agregando $USER al equipo $TEAM_NAME ($TEAM_SLUG)..."
+            gh api --method PUT /orgs/$ORG/teams/$TEAM_SLUG/memberships/$USER -f role=member || true
+          done
+          
+          echo "🎉 Proceso terminado"
+               
       
