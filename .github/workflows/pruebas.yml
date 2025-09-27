@@ -59,11 +59,6 @@ jobs:
             echo "Invitando $USER a $ORG"
             
             INVITEE_ID=$(gh api users/$USER | jq -r '.id')
-
-            echo "id 1 -> $INVITEE_ID **"
-            echo "id 2 -> $INVITEE_ID1 **"
-            echo "id 3 -> $INVITEE_ID2 **"
-
             gh api --method POST /orgs/$ORG/invitations \
             --input - <<< "{\"invitee_id\": $INVITEE_ID, \"role\": \"direct_member\"}" || true
            
@@ -73,13 +68,9 @@ jobs:
      - name: Agregar usuario al equipo
        env:
           ORG: ${{ inputs.team }}
+          USER: ${{ inputs.username }}
        run: |
-          TEAM_SLUG=$(gh api /orgs/$ORG/teams --jq ".[] | select(.name==\"${{ inputs.team }}\") | .slug")
-          if [ -z "$TEAM_SLUG" ]; then
-          echo "tam slug -> $TEAM_SLUG "
-          echo "❌ No se encontró el equipo con nombre: ${{ inputs.team }}"
-          exit 1
-          fi
+          TEAM_SLUG=$(gh api /orgs/$ORG/teams --jq ".[] | select(.name==\"$ORG\") | .slug")
           echo "📌 Slug del equipo encontrado: $TEAM_SLUG"
           gh api --method PUT /orgs/$ORG/teams/${{ inputs.team }}/memberships/${{ inputs.username }} || true
           # 3. Esperar hasta que el usuario acepte la invitación
