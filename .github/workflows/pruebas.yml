@@ -67,9 +67,7 @@ jobs:
             echo "id 2 -> $INVITEE_ID1 **"
             echo "id 3 -> $INVITEE_ID2 **"
 
-            gh api --method POST /orgs/$ORG/invitations \
-            -f invitee_id=$INVITEE_ID \
-            -f role=direct_member
+            gh api --method POST /orgs/$ORG/invitations -f invitee_id=$(gh api users/$USER | jq -r '.id') -f role=direct_member || true
           else
             echo "$USER ya es miembro o no se pudo comprobar membership; continuamos"
           fi
