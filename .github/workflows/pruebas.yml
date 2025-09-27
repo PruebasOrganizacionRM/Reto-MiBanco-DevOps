@@ -43,7 +43,7 @@ jobs:
           TEAM_SLUG=$(gh api /orgs/$ORG/teams --jq ".[] | select(.name==\"$ORG\") | .slug")
           echo "📌 Slug del equipo encontrado: $TEAM_SLUG"
           
-          TEAM_NAMES=$(gh api /orgs/$ORG/teams --jq '.[].name')
-          echo "$TEAM_NAMES"
+          TEAM_NAMES=$(gh api /orgs/$ORG/teams)
+          echo "prueba de teams -> $TEAM_NAMES"
      
       
