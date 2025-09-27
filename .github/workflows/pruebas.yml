@@ -45,3 +45,6 @@ jobs:
           else
             echo "id=" >> "$GITHUB_OUTPUT"
           fi
+     - name: Usar el ID en otro paso
+       run: |
+          echo "El ID del usuario es: ${{ steps.userid.outputs.id }}"
