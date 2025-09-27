@@ -1,16 +1,47 @@
 name: Pruebas usando variables
 run-name: ¡Estoy probando variables a usar Variables!
 on:
-  workflow_dispatch
-env:
-  ORG: ${{ github.repository_owner }}
+  workflow_dispatch:
+    inputs:
+      username:
+        description: "GitHub username a invitar (sin @)"
+        required: true
+        type: string
+      team:
+        description: "Nombre del team en la organización"
+        required: true
+        type: string
+      repo:
+        description: "Repositorio destino para asignar permisos (nombre)"
+        required: true
+        type: string
+      permission:
+        description: "Permiso en repo: pull, triage, push, maintain, admin"
+        required: true
+        default: "push"
+        type: string
+
 jobs:
-  saludo-variables:
+  onboarding:
     runs-on: ubuntu-latest
-    env:
-      SALUDO: Hola
+    permissions:
+      actions: write
+      contents: read
+      issues: write
     steps:
-      - name: Saludar
-        run: echo "$SALUDO, $NOMBRE. Hoy es $ORG!"
-        env:
-          NOMBRE: Rafael
+     - name: Auth gh con token
+       env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+       run: |
+          echo "$GH_TOKEN" | gh auth login --with-token
+     - name: Obtener ID de usuario (si existe)
+       id: userid
+       run: |
+          set -e
+          USER="${{ inputs.username }}"
+          # Si no existe, 'gh api users/...' fallará. Manejamos la salida.
+          if gh api users/$USER --jq '.id' >/dev/null 2>&1; then
+            echo "id=$(gh api users/$USER --jq '.id')" >> "$GITHUB_OUTPUT"
+          else
+            echo "id=" >> "$GITHUB_OUTPUT"
+          fi
