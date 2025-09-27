@@ -1,0 +1,57 @@
+name: Onboarding de usuario en organización
+run-name: otra prueba
+on:
+  workflow_dispatch:
+    inputs:
+      username:
+        description: "GitHub username a invitar (sin @)"
+        required: true
+        type: string
+      team:
+        description: "Slug del team en la organización (ej: devops, backend-team)"
+        required: true
+        type: string
+      role:
+        description: "Rol en la organización (direct_member, admin, billing_manager)"
+        default: "direct_member"
+        required: true
+        type: string
+
+jobs:
+  invite-and-assign:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invitar usuario y asignar a team
+        env:
+          ORG: rafamelendez   # 👈 asegúrate de poner aquí el slug exacto de tu organización
+          USER: ${{ inputs.username }}
+          TEAM: ${{ inputs.team }}
+          ROLE: ${{ inputs.role }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}   # PAT con admin:org
+        run: |
+          set -e
+
+          echo "🔎 Verificando si $USER existe en GitHub..."
+          INVITEE_ID=$(gh api users/$USER --jq '.id' || true)
+
+          if [ -z "$INVITEE_ID" ]; then
+            echo "❌ El usuario $USER no existe en GitHub"
+            exit 1
+          fi
+
+          echo "🔎 Verificando si $USER ya es miembro de $ORG..."
+          if gh api /orgs/$ORG/members/$USER >/dev/null 2>&1; then
+            echo "✅ $USER ya es miembro de $ORG"
+          else
+            echo "📩 Invitando $USER a $ORG como $ROLE..."
+            gh api --method POST /orgs/$ORG/invitations \
+              -f invitee_id="$INVITEE_ID" \
+              -f role="$ROLE"
+            echo "✅ Invitación enviada a $USER"
+          fi
+
+          echo "👥 Asignando $USER al team $TEAM en $ORG..."
+          gh api --method PUT /orgs/$ORG/teams/$TEAM/memberships/$USER \
+            -f role=member
+
+          echo "🎉 Onboarding de $USER completado en la org $ORG y team $TEAM"
