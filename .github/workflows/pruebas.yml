@@ -59,6 +59,13 @@ jobs:
             echo "Invitando $USER a $ORG"
             
             INVITEE_ID=$(gh api users/$USER | jq -r '.id')
+            INVITEE_ID1=$(gh api users/$USER --jq '.id' | sed 's/"//g')
+            INVITEE_ID2=$(gh api users/$USER --jq '.id' | tr -d '"')
+
+
+            echo "id 1 -> INVITEE_ID **"
+            echo "id 2 -> INVITEE_ID1 **"
+            echo "id 3 -> INVITEE_ID2 **"
 
             gh api --method POST /orgs/$ORG/invitations \
             -f invitee_id=$INVITEE_ID \
