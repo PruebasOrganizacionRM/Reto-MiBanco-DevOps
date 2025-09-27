@@ -68,8 +68,8 @@ jobs:
             echo "id 3 -> $INVITEE_ID2 **"
 
             gh api --method POST /orgs/$ORG/invitations \
-            -f invitee_id=$INVITEE_ID2 \
-            -f role=direct_member || true
+            --input - <<< "{\"invitee_id\": $INVITEE_ID, \"role\": \"direct_member\"}" || true
+
 
             
           else
