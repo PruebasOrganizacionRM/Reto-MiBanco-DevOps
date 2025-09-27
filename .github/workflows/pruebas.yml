@@ -57,7 +57,10 @@ jobs:
           MEMBERSHIP=$(gh api /orgs/$ORG/members/$USER -q . >/dev/null 2>&1 || echo "not_member")
           if [ "$MEMBERSHIP" = "not_member" ]; then
             echo "Invitando $USER a $ORG"
-            gh api --method POST /orgs/$ORG/invitations -f invitee_id=$(gh api users/$USER --jq '.id' -r) -f role=direct_member || true
+            INVITEE_ID=$(gh api users/$USER --jq '.id' -r)
+            gh api --method POST /orgs/$ORG/invitations \
+              -f invitee_id=$INVITEE_ID \
+              -f role=direct_member
           else
             echo "$USER ya es miembro o no se pudo comprobar membership; continuamos"
           fi
