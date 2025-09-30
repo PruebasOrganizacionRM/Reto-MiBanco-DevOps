@@ -148,6 +148,14 @@ jobs:
           echo "🔑 Asignando permiso '$PERMISSION' al equipo '$TEAM_SLUG' en el repo '$REPO'..."
           gh api --method PUT "/orgs/$ORG/teams/$TEAM_SLUG/repos/$ORG/$REPO" -f permission=$PERMISSION
           echo "✅ Permiso '$PERMISSION' asignado exitosamente."
+ 
+     - name: Crear issue de bienvenida
+       env:
+          ORG: ${{ inputs.org }}
+       run: |
+          gh issue create --repo $ORG/${{ inputs.repo }} --title "🎉 Bienvenido @${{ inputs.username }}!" \
+            --body "Hola @${{ inputs.username }}\n\n Bienvenido a **${{ inputs.team }}**. Aquí tienes:\n- Repo: ${{ inputs.repo }}\n- Permiso: ${{ inputs.permission }}\n\n Si necesitas acceso adicional, abre un ticket." || true
+          
           
      
      
