@@ -55,7 +55,7 @@ jobs:
     
      - name: Invitar usuario a la organización (si no es miembro)
        env:
-          ORG: ${{ inputs.team }}
+          ORG: ${{ inputs.org }}
        run: |
           USER="${{ inputs.username }}"
           # Invitar por nombre de usuario (si no pertenece ya)
