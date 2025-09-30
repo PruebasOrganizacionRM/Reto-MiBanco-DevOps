@@ -56,10 +56,19 @@ jobs:
        env:
           ORG: ${{ inputs.org }}
           USER: ${{ inputs.username }}
+          TEAM_INPUT: ${{ inputs.team }}
        run: |
           
-          TEAM_SLUG=$(gh api /orgs/$ORG/teams --jq '.[] | {name: .name, slug: .slug}')
+          # TEAM_SLUG=$(gh api /orgs/$ORG/teams --jq '.[] | {name: .name, slug: .slug}')
+          TEAM_SLUG=$(gh api /orgs/$ORG/teams --paginate \
+          --jq ".[] | select(.slug==\"$TEAM_INPUT\" or .name==\"$TEAM_INPUT\") | .slug")
           echo "📌 Slug del equipo encontrado: $TEAM_SLUG"
+          if [ -z "$TEAM_SLUG" ]; then
+            echo "❌ ERROR: El equipo '$TEAM_INPUT' no existe en la organización '$ORG'."
+            echo "ℹ️  Equipos disponibles:"
+            gh api /orgs/$ORG/teams --jq '.[].slug'
+            exit 1
+          fi
           
      
      
