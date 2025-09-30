@@ -57,7 +57,8 @@ jobs:
           ORG: ${{ inputs.org }}
           USER: ${{ inputs.username }}
        run: |
-          TEAM_SLUG=$(gh api /orgs/$ORG/teams --jq ".[] | select(.name==\"$ORG\") | .slug")
+          
+          TEAM_SLUG=$(gh api /orgs/$ORG/teams --jq '.[] | {name: .name, slug: .slug}')
           echo "📌 Slug del equipo encontrado: $TEAM_SLUG"
           
      
