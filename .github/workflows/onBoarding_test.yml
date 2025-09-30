@@ -110,9 +110,9 @@ jobs:
           # Agregar usuario al equipo
           # gh api --method PUT "/orgs/$ORG/teams/$TEAM_SLUG/memberships/$USER" -f role=member
           # 4. Agregar al equipo
-          #echo "👥 Agregando $USER al equipo $TEAM_NAME ($TEAM_SLUG)"
-          #gh api --method PUT /orgs/$ORG/teams/$TEAM_SLUG/memberships/$USER -f role=member
-          #echo "🎉 $USER agregado correctamente al equipo"
+          echo "👥 Agregando $USER al equipo $TEAM_NAME ($TEAM_SLUG)"
+          gh api --method PUT /orgs/$ORG/teams/$TEAM_SLUG/memberships/$USER -f role=member
+          echo "🎉 $USER agregado correctamente al equipo"
           
      
      
