@@ -1,0 +1,65 @@
+name: OnBoarding pruebas
+run-name: ¡Estoy ejecutando pruebas de onboarding!
+on:
+  workflow_dispatch:
+    inputs:
+      username:
+        description: "GitHub username a invitar (sin @)"
+        required: true
+        type: string
+      org:
+        description: "Nombre de la organización"
+        required: true
+        type: string
+      team:
+        description: "Nombre del team en la organización"
+        required: true
+        type: string
+      repo:
+        description: "Repositorio destino para asignar permisos (nombre)"
+        required: true
+        type: string
+      permission:
+        description: "Permiso en repo: pull, triage, push, maintain, admin"
+        required: true
+        default: "push"
+        type: string
+
+jobs:
+  onboarding:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+      issues: write
+    steps:
+     - name: Auth gh con token
+       env:
+          GH_TOKEN1: ${{ secrets.GH_TOKEN }}
+       run: |
+          echo "$GH_TOKEN1" | gh auth login --with-token
+     - name: Obtener ID de usuario (si existe)
+       id: userid
+       run: |
+          set -e
+          USER="${{ inputs.username }}"
+          # Si no existe, 'gh api users/...' fallará. Manejamos la salida.
+          if gh api users/$USER --jq '.id' >/dev/null 2>&1; then
+            echo "id=$(gh api users/$USER --jq '.id')" >> "$GITHUB_OUTPUT"
+          else
+            echo "id=" >> "$GITHUB_OUTPUT"
+          fi
+     - name: Usar el ID en otro paso
+       run: |
+          echo "El ID del usuario es: ${{ steps.userid.outputs.id }}"
+     - name: Agregar usuario al equipo
+       env:
+          ORG: ${{ inputs.org }}
+          USER: ${{ inputs.username }}
+       run: |
+          TEAM_SLUG=$(gh api /orgs/$ORG/teams --jq ".[] | select(.name==\"$ORG\") | .slug")
+          echo "📌 Slug del equipo encontrado: $TEAM_SLUG"
+          
+     
+     
+      
