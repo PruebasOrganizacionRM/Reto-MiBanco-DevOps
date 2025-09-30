@@ -45,7 +45,7 @@ jobs:
 
       - name: Eliminar usuario de la organización
         run: |
-          ORG="$${{ inputs.org }}""
+          ORG="${{ inputs.org }}"
           USER="${{ inputs.username }}"
 
           echo "🗑 Eliminando a $USER de la organización $ORG..."
