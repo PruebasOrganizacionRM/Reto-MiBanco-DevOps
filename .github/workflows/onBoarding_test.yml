@@ -119,7 +119,9 @@ jobs:
           REPO: ${{ inputs.repo }}
           PERSMISSION: ${{ inputs.permission }}
        run: |
-          gh api --method PUT /orgs/$ORG/teams/$TEAM_INPUT/repos/$ORG/$REPO -f permission=$PERSMISSION || true
+          
+          gh api --method PUT "/orgs/$ORG/teams/$TEAM_SLUG/repos/$ORG/$REPO" -f permission=$PERMISSION
+          echo "✅ Permiso '$PERMISSION' asignado al equipo '$TEAM_SLUG' en el repo '$REPO'"
 
      - name: Crear issue de bienvenida
        env:
