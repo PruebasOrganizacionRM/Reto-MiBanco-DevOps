@@ -107,12 +107,29 @@ jobs:
             echo "⚠️ El usuario $USER aún no aceptó la invitación. No se puede agregar al equipo."
             exit 0
           fi
-          # Agregar usuario al equipo
-          # gh api --method PUT "/orgs/$ORG/teams/$TEAM_SLUG/memberships/$USER" -f role=member
           # 4. Agregar al equipo
           echo "👥 Agregando $USER al equipo $TEAM_NAME ($TEAM_SLUG)"
           gh api --method PUT /orgs/$ORG/teams/$TEAM_SLUG/memberships/$USER -f role=member
           echo "🎉 $USER agregado correctamente al equipo"
+
+     - name: Asignar permisos en repositorio
+       env:
+          ORG: ${{ inputs.org }}
+          TEAM_INPUT: ${{ inputs.team }}
+          REPO: ${{ inputs.repo }}
+          PERSMISSION: ${{ inputs.permission }}
+       run: |
+          gh api --method PUT /orgs/$ORG/teams/$TEAM_INPUT/repos/$ORG/$REPO -f permission=$PERSMISSION || true
+
+     - name: Crear issue de bienvenida
+       env:
+          ORG: ${{ inputs.org }}
+          REPO: ${{ inputs.repo }}
+          TEAM_INPUT: ${{ inputs.team }}
+          PERSMISSION: ${{ inputs.permission }}
+       run: |
+          gh issue create --repo $ORG/$REPO --title "🎉 Bienvenido @${{ inputs.username }}!" \
+            --body "Hola @${{ inputs.username }}\n\n Bienvenido a **$TEAM_INPUT**. Aquí tienes:\n- Repo: $REPO \n- Permiso: $PERSMISSION \n\n Si necesitas acceso adicional, abre un ticket." || true
           
      
      
