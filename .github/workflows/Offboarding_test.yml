@@ -25,7 +25,7 @@ jobs:
 
       - name: Generar auditoría de equipos/repos del usuario
         run: |
-          ORG="$${{ inputs.org }}""
+          ORG="${{ inputs.org }}""
           USER="${{ inputs.username }}"
 
           echo "📊 Generando auditoría de accesos de $USER..."
