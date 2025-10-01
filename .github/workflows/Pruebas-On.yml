@@ -33,12 +33,14 @@ jobs:
       contents: read
       issues: write
     steps:
-     - name: 🔑 Autenticación con GitHub CLI
-       env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+     
+     - name: 🔑 Auth with personal token
        run: |
-          echo "$GH_TOKEN" | gh auth login --with-token
-          gh auth status
+          unset GH_TOKEN
+          echo "${{ secrets.MY_PAT }}" | gh auth login --with-token
+
+
+        
 
      - name: ⚡ Funciones auxiliares
        id: helpers
