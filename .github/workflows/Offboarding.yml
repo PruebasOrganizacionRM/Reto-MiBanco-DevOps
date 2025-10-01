@@ -28,18 +28,18 @@ jobs:
           ORG="${{ inputs.org }}"
           USER="${{ inputs.username }}"
 
-          echo "📊 Generando auditoría de accesos de $USER..."
+          echo "Generando auditoría de accesos de $USER..."
           echo "### Auditoría de $USER" > auditoria_${USER}.md
           echo "- Organización: $ORG" >> auditoria_${USER}.md
           echo "- Usuario: $USER" >> auditoria_${USER}.md
           echo "- Fecha: $(date '+%Y-%m-%d %H:%M:%S')" >> auditoria_${USER}.md
           echo "" >> auditoria_${USER}.md
 
-          echo "👥 Equipos:"
+          echo "Equipos:"
           gh api "/orgs/$ORG/teams" --jq ".[] | select(.members_url | contains(\"$USER\")) | .slug" >> auditoria_${USER}.md || echo "Ninguno" >> auditoria_${USER}.md
 
           echo "" >> auditoria_${USER}.md
-          echo "📂 Repositorios (se obtienen por equipos relacionados)" >> auditoria_${USER}.md
+          echo "Repositorios (se obtienen por equipos relacionados)" >> auditoria_${USER}.md
 
           cat auditoria_${USER}.md
 
@@ -48,6 +48,6 @@ jobs:
           ORG="${{ inputs.org }}"
           USER="${{ inputs.username }}"
 
-          echo "🗑 Eliminando a $USER de la organización $ORG..."
-          gh api --method DELETE "/orgs/$ORG/members/$USER" || echo "ℹ️ Usuario ya no está en la organización"
-          echo "✅ Baja completada"
+          echo "Eliminando a $USER de la organización $ORG..."
+          gh api --method DELETE "/orgs/$ORG/members/$USER" || echo "Usuario ya no está en la organización"
+          echo "Baja completada"
