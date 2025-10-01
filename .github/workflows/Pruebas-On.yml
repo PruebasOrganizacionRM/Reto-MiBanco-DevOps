@@ -1,0 +1,141 @@
+name: Pruebas OB
+run-name: 🚀 Onboarding de usuarios
+
+on:
+  workflow_dispatch:
+    inputs:
+      username:
+        description: "GitHub username a invitar (sin @)"
+        required: true
+        type: string
+      org:
+        description: "Nombre de la organización"
+        required: true
+        type: string
+      team:
+        description: "Nombre del team en la organización"
+        required: true
+        type: string
+      repo:
+        description: "Repositorio destino para asignar permisos (nombre)"
+        required: true
+        type: string
+      permission:
+        description: "Permiso en repo: pull, triage, push, maintain, admin"
+        required: true
+        default: "push"
+        type: string
+
+jobs:
+  onboarding:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+     - name: 🔑 Autenticación con GitHub CLI
+       env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+       run: |
+          echo "$GH_TOKEN" | gh auth login --with-token
+          gh auth status
+
+     - name: ⚡ Funciones auxiliares
+       id: helpers
+       run: |
+          cat <<'EOF' > helpers.sh
+          #!/bin/bash
+          set -euo pipefail
+
+          get_team_slug() {
+            local ORG="$1" TEAM="$2"
+            gh api /orgs/$ORG/teams --paginate \
+              --jq ".[] | select(.slug==\"$TEAM\" or .name==\"$TEAM\") | .slug"
+          }
+
+          repo_exists() {
+            local ORG="$1" REPO="$2"
+            gh api "/repos/$ORG/$REPO" >/dev/null 2>&1
+          }
+          EOF
+          chmod +x helpers.sh
+
+     - name: 👤 Invitar usuario a la organización
+       env:
+          ORG: ${{ inputs.org }}
+          USER: ${{ inputs.username }}
+       run: |
+          set -euo pipefail
+          source ./helpers.sh
+
+          if gh api /orgs/$ORG/members/$USER -q . >/dev/null 2>&1; then
+            echo "✅ $USER ya es miembro de $ORG"
+          else
+            echo "➕ Invitando $USER a $ORG..."
+            INVITEE_ID=$(gh api users/$USER --jq '.id')
+            gh api --method POST /orgs/$ORG/invitations \
+              -f invitee_id="$INVITEE_ID" -f role="direct_member" || true
+          fi
+
+     - name: 👥 Agregar usuario al equipo
+       env:
+          ORG: ${{ inputs.org }}
+          USER: ${{ inputs.username }}
+          TEAM_INPUT: ${{ inputs.team }}
+       run: |
+          set -euo pipefail
+          source ./helpers.sh
+
+          TEAM_SLUG=$(get_team_slug "$ORG" "$TEAM_INPUT")
+          if [ -z "$TEAM_SLUG" ]; then
+            echo "❌ Equipo '$TEAM_INPUT' no existe en $ORG"
+            echo "ℹ️ Equipos disponibles:" && gh api /orgs/$ORG/teams --jq '.[].slug'
+            exit 1
+          fi
+
+          echo "⏳ Esperando confirmación de invitación..."
+          for i in {1..10}; do
+            if gh api /orgs/$ORG/members/$USER -q . >/dev/null 2>&1; then
+              echo "✅ $USER ya es miembro confirmado"
+              break
+            fi
+            echo "⌛ Invitación pendiente, reintentando en 30s..."
+            sleep 30
+          done
+
+          gh api --method PUT /orgs/$ORG/teams/$TEAM_SLUG/memberships/$USER -f role=member
+          echo "🎉 $USER agregado al equipo $TEAM_SLUG"
+
+     - name: 🔑 Asignar permisos en repositorio
+       env:
+          ORG: ${{ inputs.org }}
+          TEAM_INPUT: ${{ inputs.team }}
+          REPO: ${{ inputs.repo }}
+          PERMISSION: ${{ inputs.permission }}
+       run: |
+          set -euo pipefail
+          source ./helpers.sh
+
+          if ! repo_exists "$ORG" "$REPO"; then
+            echo "❌ Repo '$REPO' no existe en $ORG"
+            echo "ℹ️ Repos disponibles:" && gh api /orgs/$ORG/repos --paginate --jq '.[].name'
+            exit 1
+          fi
+
+          TEAM_SLUG=$(get_team_slug "$ORG" "$TEAM_INPUT")
+          echo "🔑 Asignando '$PERMISSION' a equipo '$TEAM_SLUG' en repo '$REPO'"
+          gh api --method PUT "/orgs/$ORG/teams/$TEAM_SLUG/repos/$ORG/$REPO" -f permission=$PERMISSION
+          echo "✅ Permiso asignado"
+
+     - name: 🎉 Crear issue de bienvenida
+       env:
+          ORG: ${{ inputs.org }}
+       run: |
+          gh issue create --repo $ORG/${{ inputs.repo }} \
+            --title "🎉 Bienvenido @${{ inputs.username }}!" \
+            --body "Hola @${{ inputs.username }} 👋
+            Bienvenido a **${{ inputs.team }}** 🚀         
+            - Repo: ${{ inputs.repo }}
+            - Permiso: ${{ inputs.permission }}
+            Si necesitas acceso adicional, abre un ticket."
+                      || true
