@@ -66,37 +66,37 @@ jobs:
           TEAM_SLUG=$(gh api /orgs/$ORG/teams --paginate \
           --jq ".[] | select(.slug==\"$TEAM_INPUT\" or .name==\"$TEAM_INPUT\") | .slug")
           
-          echo "📌 Slug del equipo encontrado: $TEAM_SLUG"
+          echo "- Slug del equipo encontrado: $TEAM_SLUG"
           
           if [ -z "$TEAM_SLUG" ]; then
-            echo "❌ ERROR: El equipo '$TEAM_INPUT' no existe en la organización '$ORG'."
-            echo "ℹ️  Equipos disponibles:"
+            echo "ERROR: El equipo '$TEAM_INPUT' no existe en la organización '$ORG'."
+            echo "Equipos disponibles:"
             gh api /orgs/$ORG/teams --jq '.[].slug'
             exit 1
           fi
-          echo "👤 Agregando usuario @$USER al equipo $TEAM_SLUG..."
+          echo "Agregando usuario @$USER al equipo $TEAM_SLUG..."
           
           # 3. Esperar hasta que el usuario acepte la invitación
-          echo "⏳ Verificando si $USER ya aceptó la invitación..."
+          echo "** Verificando si $USER ya aceptó la invitación..."
           for i in {1..10}; do
             STATUS=$(gh api /orgs/$ORG/members/$USER -q . >/dev/null 2>&1 && echo "accepted" || echo "pending")
             if [ "$STATUS" = "accepted" ]; then
-              echo "✅ $USER ya es miembro confirmado"
+              echo "$USER ya es miembro confirmado"
             break
             fi
-            echo "⌛ Invitación aún pendiente, esperando 30s..."
+            echo "**Invitación aún pendiente, esperando 30s..."
             sleep 30
           done
 
           if [ "$STATUS" != "accepted" ]; then
-            echo "⚠️ El usuario $USER aún no aceptó la invitación. No se puede agregar al equipo."
+            echo "El usuario $USER aún no aceptó la invitación. No se puede agregar al equipo."
             exit 0
           fi
           
           # 4. Agregar al equipo
-          echo "👥 Agregando $USER al equipo $TEAM_NAME ($TEAM_SLUG)"
+          echo "Agregando $USER al equipo $TEAM_NAME ($TEAM_SLUG)"
           gh api --method PUT /orgs/$ORG/teams/$TEAM_SLUG/memberships/$USER -f role=member
-          echo "🎉 $USER agregado correctamente al equipo"
+          echo "$USER agregado correctamente al equipo"
 
      - name: Asignar permisos en repositorio
        env:
@@ -107,39 +107,39 @@ jobs:
        run: |
          set -euo pipefail
 
-          echo "🔎 Validando repo '$REPO' en la organización '$ORG'..."
+          echo "Validando repo '$REPO' en la organización '$ORG'..."
 
           # Validar repo
           if ! gh api "/repos/$ORG/$REPO" >/dev/null 2>&1; then
-            echo "❌ ERROR: El repositorio '$REPO' no existe en la organización '$ORG'."
-            echo "ℹ️  Repos disponibles:"
+            echo "ERROR: El repositorio '$REPO' no existe en la organización '$ORG'."
+            echo "Repos disponibles:"
             gh api "/orgs/$ORG/repos" --paginate --jq '.[].name'
             exit 1
           fi
-          echo "📌 Repositorio encontrado: $REPO"
+          echo "Repositorio encontrado: $REPO"
 
           # Buscar slug del equipo
           TEAM_SLUG=$(gh api "/orgs/$ORG/teams" --paginate \
             --jq ".[] | select(.slug==\"$TEAM_INPUT\" or .name==\"$TEAM_INPUT\") | .slug")
 
           if [ -z "$TEAM_SLUG" ]; then
-            echo "❌ ERROR: El equipo '$TEAM_INPUT' no existe en la organización '$ORG'."
-            echo "ℹ️  Equipos disponibles:"
+            echo "ERROR: El equipo '$TEAM_INPUT' no existe en la organización '$ORG'."
+            echo "Equipos disponibles:"
             gh api "/orgs/$ORG/teams" --jq '.[].slug'
             exit 1
           fi
-          echo "📌 Equipo encontrado: $TEAM_SLUG"
+          echo "Equipo encontrado: $TEAM_SLUG"
 
           # Asignar permisos
-          echo "🔑 Asignando permiso '$PERMISSION' al equipo '$TEAM_SLUG' en el repo '$REPO'..."
+          echo "Asignando permiso '$PERMISSION' al equipo '$TEAM_SLUG' en el repo '$REPO'..."
           gh api --method PUT "/orgs/$ORG/teams/$TEAM_SLUG/repos/$ORG/$REPO" -f permission=$PERMISSION
-          echo "✅ Permiso '$PERMISSION' asignado exitosamente."
+          echo "Permiso '$PERMISSION' asignado exitosamente."
  
      - name: Crear issue de bienvenida
        env:
           ORG: ${{ inputs.org }}
        run: |
-          gh issue create --repo $ORG/${{ inputs.repo }} --title "🎉 Bienvenido @${{ inputs.username }}!" \
+          gh issue create --repo $ORG/${{ inputs.repo }} --title "Bienvenido @${{ inputs.username }}!" \
             --body "Hola @${{ inputs.username }}\n\n Bienvenido a **${{ inputs.team }}**. Aquí tienes:\n- Repo: ${{ inputs.repo }}\n- Permiso: ${{ inputs.permission }}\n\n Si necesitas acceso adicional, abre un ticket." || true
           
           
