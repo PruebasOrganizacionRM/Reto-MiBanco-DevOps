@@ -36,12 +36,10 @@ jobs:
      
      - name: 🔑 Auth with personal token
        run: |
-          unset GH_TOKEN
-          echo "${{ secrets.MY_PAT }}" | gh auth login --with-token
-
-
-        
-
+          gh auth status
+       env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      
      - name: ⚡ Funciones auxiliares
        id: helpers
        run: |
