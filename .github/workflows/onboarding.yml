@@ -1,4 +1,4 @@
-name: OnBoarding pruebas
+name: OnBoarding Usuarios
 run-name: ¡Estoy ejecutando pruebas de onboarding!
 on:
   workflow_dispatch:
@@ -38,21 +38,7 @@ jobs:
           GH_TOKEN1: ${{ secrets.GH_TOKEN }}
        run: |
           echo "$GH_TOKEN1" | gh auth login --with-token
-     - name: Obtener ID de usuario (si existe)
-       id: userid
-       run: |
-          set -e
-          USER="${{ inputs.username }}"
-          # Si no existe, 'gh api users/...' fallará. Manejamos la salida.
-          if gh api users/$USER --jq '.id' >/dev/null 2>&1; then
-            echo "id=$(gh api users/$USER --jq '.id')" >> "$GITHUB_OUTPUT"
-          else
-            echo "id=" >> "$GITHUB_OUTPUT"
-          fi
-     - name: Usar el ID en otro paso
-       run: |
-          echo "El ID del usuario es: ${{ steps.userid.outputs.id }}"
-    
+         
      - name: Invitar usuario a la organización (si no es miembro)
        env:
           ORG: ${{ inputs.org }}
@@ -76,21 +62,20 @@ jobs:
           ORG: ${{ inputs.org }}
           USER: ${{ inputs.username }}
           TEAM_INPUT: ${{ inputs.team }}
-       run: |
-          
-          # TEAM_SLUG=$(gh api /orgs/$ORG/teams --jq '.[] | {name: .name, slug: .slug}')
+       run: |       
           TEAM_SLUG=$(gh api /orgs/$ORG/teams --paginate \
           --jq ".[] | select(.slug==\"$TEAM_INPUT\" or .name==\"$TEAM_INPUT\") | .slug")
+          
           echo "📌 Slug del equipo encontrado: $TEAM_SLUG"
+          
           if [ -z "$TEAM_SLUG" ]; then
             echo "❌ ERROR: El equipo '$TEAM_INPUT' no existe en la organización '$ORG'."
             echo "ℹ️  Equipos disponibles:"
             gh api /orgs/$ORG/teams --jq '.[].slug'
             exit 1
           fi
-
-          echo "📌 Equipo encontrado: $TEAM_SLUG"
           echo "👤 Agregando usuario @$USER al equipo $TEAM_SLUG..."
+          
           # 3. Esperar hasta que el usuario acepte la invitación
           echo "⏳ Verificando si $USER ya aceptó la invitación..."
           for i in {1..10}; do
@@ -107,6 +92,7 @@ jobs:
             echo "⚠️ El usuario $USER aún no aceptó la invitación. No se puede agregar al equipo."
             exit 0
           fi
+          
           # 4. Agregar al equipo
           echo "👥 Agregando $USER al equipo $TEAM_NAME ($TEAM_SLUG)"
           gh api --method PUT /orgs/$ORG/teams/$TEAM_SLUG/memberships/$USER -f role=member
